@@ -15,7 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 public class decoder {
-	private ArrayList<decodeNode> decodeTable = new ArrayList<decodeNode>();
+	private ArrayList<decodeNode> decodeTable;
 	private List<Byte> toWriteBuffer = new ArrayList<Byte>();
 	private BufferedOutputStream  outputWriter;
 	public static void main(String[] args){
@@ -34,7 +34,7 @@ public class decoder {
 			} catch (Exception e) {
 				return;
 			}
-			this.createNodeTable(filename);
+			this.doDecode(filename);
 			try {
 		        this.outputWriter.close();
 			} catch (Exception e){
@@ -42,24 +42,34 @@ public class decoder {
 			}
 		}
 	}
-	protected void createNodeTable(String filename) {
-		this.decodeTable.add(new decodeNode (0, (byte) 13)); // reset
-		this.decodeTable.add(new decodeNode (0, (byte) 0)); // null entry
+	protected void doDecode(String filename) {
+		this.createDecodeTable();
 		try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
 		    String line;
 		    while ((line = br.readLine()) != null) { // goes through ever line
 		    	String[] splitLine = line.split(",");
 		    	int pointerInt = Integer.parseInt(splitLine[0]);
 		    	byte missmatch = (byte) Integer.parseInt(splitLine[1]);
-		    	decodeNode d = new decodeNode( pointerInt , missmatch);
-	    		this.decodeTable.add(d);
-	    		d.writeGroup();
+		    	if (pointerInt == 0){ // reset entry
+		    		this.createDecodeTable();
+		    	}
+		    	else{
+			    	decodeNode d = new decodeNode( pointerInt , missmatch);
+		    		this.decodeTable.add(d);
+		    		d.writeGroup();
+		    	}
 		    }
 		}
 		catch (Exception e) {
 			return;
 		}
 		this.saveData();
+	}
+	
+	protected void createDecodeTable (){
+		this.decodeTable = new ArrayList<decodeNode>();
+		this.decodeTable.add(new decodeNode (0, (byte) 13)); // reset
+		this.decodeTable.add(new decodeNode (0, (byte) 0)); // null entry
 	}
 
 	protected void saveData(){ // writes everything in toWriteBuffer onto the end of outputFile
@@ -71,7 +81,6 @@ public class decoder {
 		} catch (Exception e) {
 			return;
 		}
-
 	}
 	
 	private class decodeNode{
